@@ -612,7 +612,7 @@ configuration ConfigureSPVM
 <#
             DependsOn            = "[SPWebApplicationExtension]ExtendWebApp"
 #>
-            DependsOn            = "[SPWebApplicationExtension]MainWebApp"
+            DependsOn            = "[SPWebApplication]MainWebApp"
         }
 
 <#

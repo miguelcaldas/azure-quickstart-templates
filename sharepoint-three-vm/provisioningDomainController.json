@@ -95,7 +95,7 @@
       }
     },
     {
-      "type": "extensions",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(parameters('adVMName'),'/InstallDomainController')]",
       "apiVersion": "2017-03-30",
       "location": "[parameters('location')]",

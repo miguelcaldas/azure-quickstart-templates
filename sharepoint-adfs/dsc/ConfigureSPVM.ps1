@@ -18,7 +18,7 @@ configuration ConfigureSPVM
         [Parameter(Mandatory)] [System.Management.Automation.PSCredential]$SPSuperReaderCreds
     )
 
-    Import-DscResource -ModuleName ComputerManagementDsc, StorageDsc, NetworkingDsc, xActiveDirectory, xCredSSP, xWebAdministration, SharePointDsc, xPSDesiredStateConfiguration, xDnsServer, CertificateDsc, SqlServerDsc, xPendingReboot
+    Import-DscResource -ModuleName ComputerManagementDsc, StorageDsc, NetworkingDsc, xActiveDirectory, xCredSSP, xWebAdministration, SharePointDsc, xPSDesiredStateConfiguration, xDnsServer, SqlServerDsc, xPendingReboot
 
     [String] $DomainNetbiosName = (Get-NetBIOSName -DomainFQDN $DomainFQDN)
     $Interface = Get-NetAdapter| Where-Object Name -Like "Ethernet*"| Select-Object -First 1
@@ -33,7 +33,7 @@ configuration ConfigureSPVM
     [Int] $RetryCount = 30
     [Int] $RetryIntervalSec = 30
     [String] $ComputerName = Get-Content env:computername
-    [String] $LdapcpLink = (Get-LatestGitHubRelease -Repo "Yvand/LDAPCP" -Artifact "LDAPCP.wsp")
+#    [String] $LdapcpLink = (Get-LatestGitHubRelease -Repo "Yvand/LDAPCP" -Artifact "LDAPCP.wsp")
     [String] $ServiceAppPoolName = "SharePoint Service Applications"
     [String] $UpaServiceName = "User Profile Service Application"
     [String] $AppDomainFQDN = (Get-AppDomain -DomainFQDN $DomainFQDN -Suffix "Apps")
@@ -195,7 +195,7 @@ configuration ConfigureSPVM
             DependsOn                     = "[Computer]DomainJoin"
         }        
 
-        xADUser CreateSParmAccount
+        xADUser CreateSPFarmAccount
         {
             DomainName                    = $DomainFQDN
             UserName                      = $SPFarmCreds.UserName
@@ -213,7 +213,7 @@ configuration ConfigureSPVM
             MembersToInclude     = @("$($SPSetupCredsQualified.UserName)")
             Credential           = $DomainAdminCredsQualified
             PsDscRunAsCredential = $DomainAdminCredsQualified
-            DependsOn            = "[xADUser]CreateSPSetupAccount", "[xADUser]CreateSParmAccount"
+            DependsOn            = "[xADUser]CreateSPSetupAccount", "[xADUser]CreateSPFarmAccount"
         }
 
         xADUser CreateSPSvcAccount
@@ -267,12 +267,13 @@ configuration ConfigureSPVM
             Type                 = 'File'
             Force                = $true
             PsDscRunAsCredential = $SPSetupCredential
-            DependsOn            = "[Group]AddSPSetupAccountToAdminGroup", "[xADUser]CreateSParmAccount", "[xADUser]CreateSPSvcAccount", "[xADUser]CreateSPAppPoolAccount", "[xADUser]CreateSPSuperUserAccount", "[xADUser]CreateSPSuperReaderAccount"
+            DependsOn            = "[Group]AddSPSetupAccountToAdminGroup", "[xADUser]CreateSPFarmAccount", "[xADUser]CreateSPSvcAccount", "[xADUser]CreateSPAppPoolAccount", "[xADUser]CreateSPSuperUserAccount", "[xADUser]CreateSPSuperReaderAccount"
         }
 
         #****************************************************************
         # Copy solutions and certificates that will be used in SharePoint
         #****************************************************************
+<#
         File CopyCertificatesFromDC
         {
             Ensure          = "Present"
@@ -309,6 +310,7 @@ configuration ConfigureSPVM
             DestinationPath = "$SetupPath\LDAPCP.wsp"
             DependsOn       = "[File]AccountsProvisioned", "[Registry]SchUseStrongCrypto", "[Registry]SchUseStrongCrypto64"
         }
+#>
 
         SqlAlias AddSqlAlias
         {
@@ -381,6 +383,7 @@ configuration ConfigureSPVM
             DependsOn            = "[SPFarm]CreateSPFarm"
         }
 
+<#
         SPFarmSolution InstallLdapcp
         {
             LiteralPath          = "$SetupPath\LDAPCP.wsp"
@@ -390,6 +393,7 @@ configuration ConfigureSPVM
             PsDscRunAsCredential = $SPSetupCredsQualified
             DependsOn            = "[xScript]RestartSPTimer"
         }
+#>
 
         SPManagedAccount CreateSPSvcManagedAccount
         {
@@ -435,6 +439,7 @@ configuration ConfigureSPVM
             DependsOn            = "[SPFarm]CreateSPFarm"
         }
 
+<#
         # Installing LDAPCP somehow updates SPClaimEncodingManager 
         # But in SharePoint 2019 (only), it causes an UpdatedConcurrencyException on SPClaimEncodingManager in SPTrustedIdentityTokenIssuer resource
         # The only solution I've found is to force a reboot in SharePoint 2019
@@ -461,7 +466,9 @@ configuration ConfigureSPVM
                 DependsOn        = "[xScript]ForceRebootBeforeCreatingSPTrust"
             }
         }
+#>
 
+<#
         SPTrustedIdentityTokenIssuer CreateSPTrust
         {
             Name                         = $DomainFQDN
@@ -487,6 +494,7 @@ configuration ConfigureSPVM
             DependsOn                    = "[SPFarmSolution]InstallLdapcp"
             PsDscRunAsCredential         = $SPSetupCredsQualified
         }
+#>
 
         #**********************************************************
         # Service instances are started at the beginning of the deployment to give some time between this and creation of service applications
@@ -538,6 +546,7 @@ configuration ConfigureSPVM
             DependsOn              = "[SPFarm]CreateSPFarm"
         }
 
+<#
         # Update GPO to ensure the root certificate of the CA is present in "cert:\LocalMachine\Root\" before issuing a certificate request, otherwise request would fail
         xScript UpdateGPOToTrustRootCACert
         {
@@ -581,6 +590,7 @@ configuration ConfigureSPVM
             PsDscRunAsCredential   = $SPSetupCredsQualified
             DependsOn              = '[CertReq]SPSSiteCert'
         }
+#>
 
         SPWebAppAuthentication ConfigureWebAppAuthentication
         {
@@ -590,16 +600,22 @@ configuration ConfigureSPVM
                     AuthenticationMethod = "NTLM"
                 }
             )
+<#
             Intranet = @(
                 MSFT_SPWebAppAuthenticationMode {
                     AuthenticationMethod = "Federated"
                     AuthenticationProvider = $DomainFQDN
                 }
             )
+#>
             PsDscRunAsCredential = $SPSetupCredsQualified
+<#
             DependsOn            = "[SPWebApplicationExtension]ExtendWebApp"
+#>
+            DependsOn            = "[SPWebApplicationExtension]MainWebApp"
         }
 
+<#
         # Cannot use resource xWebsite in xWebAdministration because CertificateThumbprint is not known yet
         xScript SetHTTPSCertificate
         {
@@ -629,19 +645,20 @@ configuration ConfigureSPVM
                     New-Item IIS:\SslBindings\*!443 -value $siteCert
                 }
 
-                <# To implement only when the TestScript will be implemented and will determine that current config must be overwritten
+                < # To implement only when the TestScript will be implemented and will determine that current config must be overwritten
                 # Otherwise, assume the right certificate is already used and binding doesn't need to be recreated
                 if ((Get-Item IIS:\SslBindings\*!443)) {
                     Remove-Item IIS:\SslBindings\*!443 -Confirm:$false
                 }
                 New-Item IIS:\SslBindings\*!443 -value $siteCert
-                #>
+                # >
             }
             GetScript            = { }
             TestScript           = { return $false } # If the TestScript returns $false, DSC executes the SetScript to bring the node back to the desired state
             PsDscRunAsCredential = $DomainAdminCredsQualified
             DependsOn            = "[SPWebAppAuthentication]ConfigureWebAppAuthentication"
         }
+#>
 
         SPCacheAccounts SetCacheAccounts
         {
@@ -678,6 +695,7 @@ configuration ConfigureSPVM
             DependsOn                = "[SPWebApplication]MainWebApp"
         }
 
+<#
         SPSiteUrl MySiteHostIntranetUrl
         {
             Url                  = "http://$MySiteHostAlias/"
@@ -685,6 +703,7 @@ configuration ConfigureSPVM
             PsDscRunAsCredential = $SPSetupCredsQualified
             DependsOn            = "[SPSite]MySiteHost"
         }
+#>
 
         SPManagedPath MySiteManagedPath
         {
@@ -732,6 +751,7 @@ configuration ConfigureSPVM
             DependsOn                = "[SPWebApplication]MainWebApp"
         }
 
+<#
         SPSiteUrl HNSC1IntranetUrl
         {
             Url                  = "http://$HNSC1Alias/"
@@ -739,6 +759,7 @@ configuration ConfigureSPVM
             PsDscRunAsCredential = $SPSetupCredsQualified
             DependsOn            = "[SPSite]CreateHNSC1"
         }
+#>
 
         <#xScript CreateDefaultGroupsInTeamSites
         {
@@ -899,8 +920,8 @@ configuration ConfigureSPVM
         {
             SetScript = {
                 $argumentList = @(@{ "webAppUrl"             = "http://$using:SPTrustedSitesName";
-                                     "AppDomainFQDN"         = "$using:AppDomainFQDN";
-                                     "AppDomainIntranetFQDN" = "$using:AppDomainIntranetFQDN" })
+                                     "AppDomainFQDN"         = "$using:AppDomainFQDN" <# ;
+                                     "AppDomainIntranetFQDN" = "$using:AppDomainIntranetFQDN" #> })
                 Invoke-SPDscCommand -Arguments @argumentList -ScriptBlock {
                     $params = $args[0]
 
@@ -912,7 +933,9 @@ configuration ConfigureSPVM
                     # Configure app domains in zones of the web application
                     $webAppUrl = $params.webAppUrl
                     $appDomainDefaultZone = $params.AppDomainFQDN
+<#
                     $appDomainIntranetZone = $params.AppDomainIntranetFQDN
+#>
 
                     $defaultZoneConfig = Get-SPWebApplicationAppDomain -WebApplication $webAppUrl -Zone Default
                     if($defaultZoneConfig -eq $null) {
@@ -923,6 +946,7 @@ configuration ConfigureSPVM
                         New-SPWebApplicationAppDomain -WebApplication $webAppUrl -Zone Default -AppDomain $appDomainDefaultZone -ErrorAction SilentlyContinue
                     }
 
+<#
                     $IntranetZoneConfig = Get-SPWebApplicationAppDomain -WebApplication $webAppUrl -Zone Intranet
                     if($IntranetZoneConfig -eq $null) {
                         New-SPWebApplicationAppDomain -WebApplication $webAppUrl -Zone Intranet -SecureSocketsLayer -AppDomain $appDomainIntranetZone -ErrorAction SilentlyContinue
@@ -931,6 +955,7 @@ configuration ConfigureSPVM
                         $IntranetZoneConfig| Remove-SPWebApplicationAppDomain -Confirm:$false
                         New-SPWebApplicationAppDomain -WebApplication $webAppUrl -Zone Intranet -SecureSocketsLayer -AppDomain $appDomainIntranetZone -ErrorAction SilentlyContinue
                     }
+#>
 
                     # Configure app catalog
                     # Deactivated because it throws "Access is denied. (Exception from HRESULT: 0x80070005 (E_ACCESSDENIED))"

@@ -905,6 +905,7 @@ configuration ConfigureSPVM
             DependsOn            = "[SPWebApplication]MainWebApp"
         }
 
+<#
         SPSecurityTokenServiceConfig ConfigureSTS
         {
             Name                  = "SecurityTokenServiceManager"
@@ -915,6 +916,7 @@ configuration ConfigureSPVM
             PsDscRunAsCredential  = $SPSetupCredsQualified
             DependsOn             = "[SPAppDomain]ConfigureLocalFarmAppUrls"
         }
+#>
 
         Script ConfigureAppDomains
         {
@@ -933,9 +935,7 @@ configuration ConfigureSPVM
                     # Configure app domains in zones of the web application
                     $webAppUrl = $params.webAppUrl
                     $appDomainDefaultZone = $params.AppDomainFQDN
-<#
                     $appDomainIntranetZone = $params.AppDomainIntranetFQDN
-#>
 
                     $defaultZoneConfig = Get-SPWebApplicationAppDomain -WebApplication $webAppUrl -Zone Default
                     if($defaultZoneConfig -eq $null) {
@@ -946,7 +946,6 @@ configuration ConfigureSPVM
                         New-SPWebApplicationAppDomain -WebApplication $webAppUrl -Zone Default -AppDomain $appDomainDefaultZone -ErrorAction SilentlyContinue
                     }
 
-<#
                     $IntranetZoneConfig = Get-SPWebApplicationAppDomain -WebApplication $webAppUrl -Zone Intranet
                     if($IntranetZoneConfig -eq $null) {
                         New-SPWebApplicationAppDomain -WebApplication $webAppUrl -Zone Intranet -SecureSocketsLayer -AppDomain $appDomainIntranetZone -ErrorAction SilentlyContinue
@@ -955,7 +954,6 @@ configuration ConfigureSPVM
                         $IntranetZoneConfig| Remove-SPWebApplicationAppDomain -Confirm:$false
                         New-SPWebApplicationAppDomain -WebApplication $webAppUrl -Zone Intranet -SecureSocketsLayer -AppDomain $appDomainIntranetZone -ErrorAction SilentlyContinue
                     }
-#>
 
                     # Configure app catalog
                     # Deactivated because it throws "Access is denied. (Exception from HRESULT: 0x80070005 (E_ACCESSDENIED))"

@@ -92,41 +92,39 @@
             "storageUri": "[concat('http://',parameters('storageAccountNamePrefix'),'2.blob.core.windows.net')]"
           }
         }
-      },
-      "resources": [
-        {
-          "type": "extensions",
-          "name": "[concat(parameters('adVMName'),'/InstallDomainController')]",
-          "apiVersion": "2017-03-30",
-          "location": "[parameters('location')]",
-          "dependsOn": [
-            "[resourceId('Microsoft.Compute/virtualMachines', parameters('adVMName'))]"
-          ],
-          "properties": {
-            "publisher": "Microsoft.Powershell",
-            "type": "DSC",
-            "typeHandlerVersion": "2.20",
-            "autoUpgradeMinorVersion": true,
-            "settings": {
-              "ModulesUrl": "[parameters('adModulesURL')]",
-              "wmfVersion": "4.0",
-              "ConfigurationFunction": "[parameters('adConfigurationFunction')]",
-              "Properties": {
-                "DomainName": "[parameters('domainName')]",
-                "AdminCreds": {
-                  "UserName": "[parameters('adminUsername')]",
-                  "Password": "PrivateSettingsRef:AdminPassword"
-                }
-              }
-            },
-            "protectedSettings": {
-              "Items": {
-                "AdminPassword": "[parameters('adminPassword')]"
-              }
+      }
+    },
+    {
+      "type": "extensions",
+      "name": "[concat(parameters('adVMName'),'/InstallDomainController')]",
+      "apiVersion": "2017-03-30",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('adVMName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.20",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "ModulesUrl": "[parameters('adModulesURL')]",
+          "wmfVersion": "4.0",
+          "ConfigurationFunction": "[parameters('adConfigurationFunction')]",
+          "Properties": {
+            "DomainName": "[parameters('domainName')]",
+            "AdminCreds": {
+              "UserName": "[parameters('adminUsername')]",
+              "Password": "PrivateSettingsRef:AdminPassword"
             }
           }
+        },
+        "protectedSettings": {
+          "Items": {
+            "AdminPassword": "[parameters('adminPassword')]"
+          }
         }
-      ]
+      }
     }
   ],
   "outputs": {}

@@ -1,7 +1,5 @@
-﻿configuration ConfigureDCVM
-{
-    param
-    (
+﻿configuration ConfigureDCVM {
+    param (
         [Parameter(Mandatory)] [String]$DomainFQDN,
         [Parameter(Mandatory)] [System.Management.Automation.PSCredential]$Admincreds,
         [Parameter(Mandatory)] [System.Management.Automation.PSCredential]$AdfsSvcCreds,
@@ -22,28 +20,24 @@
     [String] $AppDomainFQDN = (Get-AppDomain -DomainFQDN $DomainFQDN -Suffix "Apps")
     [String] $AppDomainIntranetFQDN = (Get-AppDomain -DomainFQDN $DomainFQDN -Suffix "Apps-Intranet")
 
-    Node localhost
-    {
-        LocalConfigurationManager
-        {
+    Node localhost {
+        LocalConfigurationManager {
             ConfigurationMode = 'ApplyOnly'
             RebootNodeIfNeeded = $true
         }
 
-        WindowsFeature ADDS { Name = "AD-Domain-Services"; Ensure = "Present" }
-        WindowsFeature DNS  { Name = "DNS"; Ensure = "Present" }
-        WindowsFeature DnsTools { Name = "RSAT-DNS-Server"; Ensure = "Present" }
+        WindowsFeature ADDS {Name = "AD-Domain-Services"; Ensure = "Present"}
+        WindowsFeature DNS {Name = "DNS"; Ensure = "Present"}
+        WindowsFeature DnsTools {Name = "RSAT-DNS-Server"; Ensure = "Present"}
 
-        DnsServerAddress DnsServerAddress 
-        {
+        DnsServerAddress DnsServerAddress {
             Address        = '127.0.0.1' 
             InterfaceAlias = $InterfaceAlias
             AddressFamily  = 'IPv4'
             DependsOn = "[WindowsFeature]DNS"
         }
 
-        xADDomain FirstDS
-        {
+        xADDomain FirstDS {
             DomainName = $DomainFQDN
             DomainAdministratorCredential = $DomainCredsNetbios
             SafemodeAdministratorPassword = $DomainCredsNetbios
@@ -53,21 +47,18 @@
             DependsOn = "[DnsServerAddress]DnsServerAddress"
         }
 
-        xPendingReboot Reboot1
-        {
+        xPendingReboot Reboot1 {
             Name = "RebootServer"
             DependsOn = "[xADDomain]FirstDS"
         }
 
-        xDnsServerPrimaryZone CreateAppsDnsZone
-        {
+        xDnsServerPrimaryZone CreateAppsDnsZone {
             Name = $AppDomainFQDN
-            Ensure= 'Present'
+            Ensure = 'Present'
             DependsOn = "[xPendingReboot]Reboot1"
         }
 
-        xDnsServerPrimaryZone CreateAppsIntranetDnsZone
-        {
+        xDnsServerPrimaryZone CreateAppsIntranetDnsZone {
             Name = $AppDomainIntranetFQDN
             Ensure= 'Present'
             DependsOn = "[xDnsServerPrimaryZone]CreateAppsDnsZone"
@@ -76,8 +67,7 @@
         #**********************************************************
         # Misc: Set email of AD domain admin and add remote AD tools
         #**********************************************************
-        xADUser SetEmailOfDomainAdmin
-        {
+        xADUser SetEmailOfDomainAdmin {
             DomainAdministratorCredential = $DomainCredsNetbios
             DomainName = $DomainFQDN
             UserName = $Admincreds.UserName
@@ -89,18 +79,13 @@
             DependsOn = "[xPendingReboot]Reboot1"
         }
 
-<#
-        WindowsFeature AddADFeature1    { Name = "RSAT-ADLDS";          Ensure = "Present"; DependsOn = "[xPendingReboot]Reboot1" }
-#>
-        WindowsFeature AddADFeature2    { Name = "RSAT-ADDS-Tools";     Ensure = "Present"; DependsOn = "[xPendingReboot]Reboot1" }
-
+        WindowsFeature AddADFeature {Name = "RSAT-ADDS-Tools"; Ensure = "Present"; DependsOn = "[xPendingReboot]Reboot1"}
     }
 }
 
-function Get-NetBIOSName
-{
+function Get-NetBIOSName {
     [OutputType([string])]
-    param(
+    param (
         [string]$DomainFQDN
     )
 
@@ -121,8 +106,7 @@ function Get-NetBIOSName
     }
 }
 
-function Get-AppDomain
-{
+function Get-AppDomain {
     [OutputType([string])]
     param(
         [string]$DomainFQDN,

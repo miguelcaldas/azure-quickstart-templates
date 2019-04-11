@@ -54,9 +54,11 @@ configuration ConfigureSPVM
         #**********************************************************
         # Initialization of VM
         #**********************************************************
+
         WindowsFeature ADTools  { Name = "RSAT-AD-Tools";      Ensure = "Present"; }
         WindowsFeature ADPS     { Name = "RSAT-AD-PowerShell"; Ensure = "Present"; }
         WindowsFeature DnsTools { Name = "RSAT-DNS-Server";    Ensure = "Present"; }
+
         DnsServerAddress DnsServerAddress
         {
             Address        = $DNSServer
@@ -71,6 +73,7 @@ configuration ConfigureSPVM
         #**********************************************************
         # Join AD forest
         #**********************************************************
+
         xWaitForADDomain DscForestWait
         {
             DomainName           = $DomainFQDN
@@ -127,6 +130,7 @@ configuration ConfigureSPVM
         #**********************************************************
         # Do some cleanup and preparation for SharePoint
         #**********************************************************
+
         Registry DisableLoopBackCheck
         {
             Key       = "HKLM:\System\CurrentControlSet\Control\Lsa"
@@ -262,7 +266,7 @@ configuration ConfigureSPVM
 
         File AccountsProvisioned
         {
-            DestinationPath      = "C:\Logs\DSC1.txt"
+            DestinationPath      = "C:\Logs\DSC0.txt"
             Contents             = "AccountsProvisioned"
             Type                 = 'File'
             Force                = $true
@@ -368,6 +372,16 @@ configuration ConfigureSPVM
             IsSingleInstance          = "Yes"
             Ensure                    = "Present"
             DependsOn                 = "[xScript]WaitForSQL"
+        }
+
+        File Step1
+        {
+            DestinationPath      = "C:\Logs\DSC1.txt"
+            Contents             = "SPFarm CreateSPFarm"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[SPFarm]CreateSPFarm"
         }
 
         xScript RestartSPTimer
@@ -546,6 +560,16 @@ configuration ConfigureSPVM
             DependsOn              = "[SPFarm]CreateSPFarm"
         }
 
+        File Step2
+        {
+            DestinationPath      = "C:\Logs\DSC2.txt"
+            Contents             = "SPWebApplication MainWebApp"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[SPWebApplication]MainWebApp"
+        }
+
 <#
         # Update GPO to ensure the root certificate of the CA is present in "cert:\LocalMachine\Root\" before issuing a certificate request, otherwise request would fail
         xScript UpdateGPOToTrustRootCACert
@@ -615,6 +639,16 @@ configuration ConfigureSPVM
             DependsOn            = "[SPWebApplication]MainWebApp"
         }
 
+        File Step3
+        {
+            DestinationPath      = "C:\Logs\DSC3.txt"
+            Contents             = "SPWebAppAuthentication ConfigureWebAppAuthentication"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[SPWebAppAuthentication]ConfigureWebAppAuthentication"
+        }
+
 <#
         # Cannot use resource xWebsite in xWebAdministration because CertificateThumbprint is not known yet
         xScript SetHTTPSCertificate
@@ -669,6 +703,16 @@ configuration ConfigureSPVM
             DependsOn            = "[SPWebApplication]MainWebApp"
         }
 
+        File Step4
+        {
+            DestinationPath      = "C:\Logs\DSC4.txt"
+            Contents             = "SPCacheAccounts SetCacheAccounts"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[SPCacheAccounts]SetCacheAccounts"
+        }
+
         SPSite RootTeamSite
         {
             Url                  = "http://$SPTrustedSitesName/"
@@ -678,6 +722,16 @@ configuration ConfigureSPVM
             Template             = "STS#0"
             PsDscRunAsCredential = $SPSetupCredsQualified
             DependsOn            = "[SPWebApplication]MainWebApp"
+        }
+
+        File Step5
+        {
+            DestinationPath      = "C:\Logs\DSC5.txt"
+            Contents             = "SPSite RootTeamSite"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[SPSite]RootTeamSite"
         }
 
         #**********************************************************
@@ -693,6 +747,16 @@ configuration ConfigureSPVM
             Template                 = "SPSMSITEHOST#0"
             PsDscRunAsCredential     = $SPSetupCredsQualified
             DependsOn                = "[SPWebApplication]MainWebApp"
+        }
+
+        File Step6
+        {
+            DestinationPath      = "C:\Logs\DSC6.txt"
+            Contents             = "SPSite MySiteHost"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[SPSite]MySiteHost"
         }
 
 <#
@@ -715,6 +779,16 @@ configuration ConfigureSPVM
             DependsOn            = "[SPSite]MySiteHost"
         }
 
+        File Step7
+        {
+            DestinationPath      = "C:\Logs\DSC7.txt"
+            Contents             = "SPManagedPath MySiteManagedPath"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[SPManagedPath]MySiteManagedPath"
+        }
+
         SPUserProfileServiceApp UserProfileServiceApp
         {
             Name                 = $UpaServiceName
@@ -728,6 +802,16 @@ configuration ConfigureSPVM
             DependsOn            = "[SPServiceAppPool]MainServiceAppPool", "[SPServiceInstance]UPAServiceInstance", "[SPSite]MySiteHost"
         }
 
+        File Step8
+        {
+            DestinationPath      = "C:\Logs\DSC8.txt"
+            Contents             = "SPUserProfileServiceApp UserProfileServiceApp"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[SPUserProfileServiceApp]UserProfileServiceApp"
+        }
+
         SPSite DevSite
         {
             Url                  = "http://$SPTrustedSitesName/sites/dev"
@@ -737,6 +821,16 @@ configuration ConfigureSPVM
             Template             = "DEV#0"
             PsDscRunAsCredential = $SPSetupCredsQualified
             DependsOn            = "[SPWebApplication]MainWebApp"
+        }
+
+        File Step9
+        {
+            DestinationPath      = "C:\Logs\DSC9.txt"
+            Contents             = "SPSite DevSite"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[SPSite]DevSite"
         }
 
         SPSite CreateHNSC1
@@ -749,6 +843,16 @@ configuration ConfigureSPVM
             Template                 = "STS#0"
             PsDscRunAsCredential     = $SPSetupCredsQualified
             DependsOn                = "[SPWebApplication]MainWebApp"
+        }
+
+        File Step10
+        {
+            DestinationPath      = "C:\Logs\DSC10.txt"
+            Contents             = "SPSite CreateHNSC1"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[SPSite]CreateHNSC1"
         }
 
 <#
@@ -833,6 +937,16 @@ configuration ConfigureSPVM
             DependsOn            = "[SPUserProfileServiceApp]UserProfileServiceApp"
         }
 
+        File Step11
+        {
+            DestinationPath      = "C:\Logs\DSC11.txt"
+            Contents             = "SPServiceAppSecurity UserProfileServiceSecurity"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[SPServiceAppSecurity]UserProfileServiceSecurity"
+        }
+
         SPSubscriptionSettingsServiceApp CreateSubscriptionSettingsServiceApp
         {
             Name                 = "Subscription Settings Service Application"
@@ -840,6 +954,16 @@ configuration ConfigureSPVM
             DatabaseName         = "$($SPDBPrefix)SubscriptionSettings"
             InstallAccount       = $DomainAdminCredsQualified
             DependsOn            = "[SPServiceAppPool]MainServiceAppPool", "[SPServiceInstance]StartSubscriptionSettingsServiceInstance"
+        }
+
+        File Step12
+        {
+            DestinationPath      = "C:\Logs\DSC12.txt"
+            Contents             = "SPSubscriptionSettingsServiceApp CreateSubscriptionSettingsServiceApp"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[SPSubscriptionSettingsServiceApp]CreateSubscriptionSettingsServiceApp"
         }
 
         SPAppManagementServiceApp CreateAppManagementServiceApp
@@ -851,6 +975,16 @@ configuration ConfigureSPVM
             DependsOn            = "[SPServiceAppPool]MainServiceAppPool", "[SPServiceInstance]StartAppManagementServiceInstance"
         }
 
+        File Step13
+        {
+            DestinationPath      = "C:\Logs\DSC13.txt"
+            Contents             = "SPAppManagementServiceApp CreateAppManagementServiceApp"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[SPAppManagementServiceApp]CreateAppManagementServiceApp"
+        }
+
         SPSite TeamSite
         {
             Url                  = "http://$SPTrustedSitesName/sites/team"
@@ -860,6 +994,16 @@ configuration ConfigureSPVM
             Template             = "STS#0"
             PsDscRunAsCredential = $SPSetupCredsQualified
             DependsOn            = "[SPWebApplication]MainWebApp"
+        }
+
+        File Step14
+        {
+            DestinationPath      = "C:\Logs\DSC14.txt"
+            Contents             = "SPSite TeamSite"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[SPSite]TeamSite"
         }
 
         xDnsRecord AddAddinDNSWildcard
@@ -894,6 +1038,16 @@ configuration ConfigureSPVM
             DependsOn            = "[SPSubscriptionSettingsServiceApp]CreateSubscriptionSettingsServiceApp", "[SPAppManagementServiceApp]CreateAppManagementServiceApp"
         }
 
+        File Step15
+        {
+            DestinationPath      = "C:\Logs\DSC15.txt"
+            Contents             = "SPAppDomain ConfigureLocalFarmAppUrls"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[SPAppDomain]ConfigureLocalFarmAppUrls"
+        }
+
         SPSite AppCatalog
         {
             Url                  = "http://$SPTrustedSitesName/sites/AppCatalog"
@@ -903,6 +1057,16 @@ configuration ConfigureSPVM
             Template             = "APPCATALOG#0"
             PsDscRunAsCredential = $SPSetupCredsQualified
             DependsOn            = "[SPWebApplication]MainWebApp"
+        }
+
+        File Step16
+        {
+            DestinationPath      = "C:\Logs\DSC16.txt"
+            Contents             = "SPSite AppCatalog"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[SPSite]AppCatalog"
         }
 
 <#
@@ -922,8 +1086,8 @@ configuration ConfigureSPVM
         {
             SetScript = {
                 $argumentList = @(@{ "webAppUrl"             = "http://$using:SPTrustedSitesName";
-                                     "AppDomainFQDN"         = "$using:AppDomainFQDN" <# ;
-                                     "AppDomainIntranetFQDN" = "$using:AppDomainIntranetFQDN" #> })
+                                     "AppDomainFQDN"         = "$using:AppDomainFQDN";
+                                     "AppDomainIntranetFQDN" = "$using:AppDomainIntranetFQDN"})
                 Invoke-SPDscCommand -Arguments @argumentList -ScriptBlock {
                     $params = $args[0]
 
@@ -966,12 +1130,32 @@ configuration ConfigureSPVM
             DependsOn            = "[SPAppDomain]ConfigureLocalFarmAppUrls"
         }
 
+        File Step17
+        {
+            DestinationPath      = "C:\Logs\DSC17.txt"
+            Contents             = "Script ConfigureAppDomains"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[Script]ConfigureAppDomains"
+        }
+
         # Deactivated because it throws "Access is denied. (Exception from HRESULT: 0x80070005 (E_ACCESSDENIED))"
         SPAppCatalog MainAppCatalog
         {
             SiteUrl              = "http://$SPTrustedSitesName/sites/AppCatalog"
             PsDscRunAsCredential = $DomainAdminCredsQualified
             DependsOn            = "[SPSite]AppCatalog"
+        }
+
+        File Step18
+        {
+            DestinationPath      = "C:\Logs\DSC18.txt"
+            Contents             = "SPAppCatalog MainAppCatalog"
+            Type                 = 'File'
+            Force                = $true
+            PsDscRunAsCredential = $SPSetupCredential
+            DependsOn            = "[SPAppCatalog]MainAppCatalog"
         }
 
         # DSC resource File throws an access denied when accessing a remote location, so use xScript instead

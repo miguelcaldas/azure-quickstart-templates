@@ -11,7 +11,7 @@
     },
     "sharePointVersion": {
       "type": "string",
-      "defaultValue": "2019",
+      "defaultValue": "2016",
       "allowedValues": [
         "2013",
         "2016",
@@ -49,7 +49,7 @@
     },
     "adminUserName": {
       "type": "string",
-      "defaultValue": "yvand",
+      "defaultValue": "Miguel",
       "minLength": 1,
       "metadata": {
         "description": "Name of the AD and SharePoint administrator. 'administrator' is not allowed"
@@ -71,7 +71,7 @@
     },
     "vmDCSize": {
       "type": "string",
-      "defaultValue": "Standard_F4",
+      "defaultValue": "Standard_F2",
       "metadata": {
         "description": "Size of the DC VM"
       }
@@ -90,14 +90,14 @@
     },
     "vmSQLSize": {
       "type": "string",
-      "defaultValue": "Standard_DS2_v2",
+      "defaultValue": "Standard_D2_v2",
       "metadata": {
         "description": "Size of the SQL VM"
       }
     },
     "vmSQLStorageAccountType": {
       "type": "string",
-      "defaultValue": "Premium_LRS",
+      "defaultValue": "Standard_LRS",
       "allowedValues": [
         "Standard_LRS",
         "Standard_GRS",
@@ -109,14 +109,14 @@
     },
     "vmSPSize": {
       "type": "string",
-      "defaultValue": "Standard_DS3_v2",
+      "defaultValue": "Standard_D11_v2",
       "metadata": {
         "description": "Size of the SQL VM"
       }
     },
     "vmSPStorageAccountType": {
       "type": "string",
-      "defaultValue": "Premium_LRS",
+      "defaultValue": "Standard_LRS",
       "allowedValues": [
         "Standard_LRS",
         "Standard_GRS",
@@ -177,7 +177,7 @@
       "metadata": {
         "description": "The base URI where artifacts required by this template are located. When the template is deployed using the accompanying scripts, a private location in the subscription will be used and this value will be automatically generated."
       },
-      "defaultValue": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/sharepoint-adfs/"
+      "defaultValue": "https://raw.githubusercontent.com/miguelcaldas/azure-quickstart-templates/master/sharepoint-adfs/"
     },
     "_artifactsLocationSasToken": {
       "type": "securestring",

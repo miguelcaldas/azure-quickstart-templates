@@ -349,7 +349,7 @@ configuration ConfigureSPVM {
             CacheSizeInMB = 2000
             CreateFirewallRules = $true
             ServiceAccount = $SPSvcCredsQualified.UserName
-            InstallAccount = $SPSetupCredsQualified
+            PsDscRunAsCredential = $SPSetupCredsQualified
             Ensure = "Present"
             DependsOn = "[SPFarm]CreateSPFarm"
         }
